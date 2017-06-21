@@ -32,11 +32,18 @@ on Cyrus databases, specifically:
 - remove deleted mailboxes (when using the "delayed" delete mode), and
 - expire entries from conversations databases.
 
-The expiration of messages is controlled by the
-``/vendor/cmu/cyrus-imapd/expire`` mailbox annotation which specifies
-the age (in days) of messages in the given mailbox that should be
-deleted.  A value of 0 means that no expiration is to be performed on
-that mailbox.
+There are various annotations that **cyr_expire** respects:
+
+- ``/vendor/cmu/cyrus-imapd/expire`` which controls the expirations of
+  messages
+- ``/vendor/cmu/cyrus-imapd/archive`` which controls the archival of
+  messages
+- ``/vendor/cmu/cyrus-imapd/delete`` which controls the deletion of
+  messages
+
+These mailbox annotations specify the age(in days) of messages in the
+given mailbox that should be deleted. A value of 0 means that no
+expiration is to be performed on that mailbox.
 
 The value of the ``/vendor/cmu/cyrus-imapd/expire`` annotation is
 inherited by all children of the mailbox on which it is set, so an
