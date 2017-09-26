@@ -746,7 +746,6 @@ include_HEADERS = \
 	lib/libcyr_cfg.h \
 	lib/lsort.h \
 	lib/map.h \
-	lib/mappedfile.h \
 	lib/mkgmtime.h \
 	lib/mpool.h \
 	lib/murmurhash2.h \
@@ -765,6 +764,12 @@ include_HEADERS = \
 	lib/vparse.h \
 	lib/wildmat.h \
 	lib/xmalloc.h
+
+if USE_NEWMAPPEDFILE
+include_HEADERS += lib/mappedfile-v2.h
+else
+include_HEADERS += lib/mappedfile.h
+endif
 
 nodist_include_HEADERS = \
 	lib/imapopts.h
@@ -1360,7 +1365,6 @@ lib_libcyrus_la_SOURCES = \
 	lib/iptostring.c \
 	lib/libcyr_cfg.c \
 	lib/lsort.c \
-	lib/mappedfile.c \
 	lib/murmurhash.c \
 	lib/mkgmtime.c \
 	lib/parseaddr.c \
@@ -1387,6 +1391,11 @@ if NONBLOCK_FCNTL
 lib_libcyrus_la_SOURCES += lib/nonblock_fcntl.c
 else
 lib_libcyrus_la_SOURCES += lib/nonblock_ioctl.c
+endif
+if USE_NEWMAPPEDFILE
+lib_libcyrus_la_SOURCES += lib/mappedfile-v2.c
+else
+lib_libcyrus_la_SOURCES += lib/mappedfile.c
 endif
 lib_libcyrus_la_LIBADD = libcrc32.la ${LIB_SASL} $(SSL_LIBS) $(GCOV_LIBS)
 lib_libcyrus_la_CFLAGS = $(AM_CFLAGS) $(CFLAG_VISIBILITY)

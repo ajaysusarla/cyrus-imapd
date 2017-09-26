@@ -524,6 +524,18 @@ fi
 AM_CONDITIONAL([USE_SQUAT], [test "${enable_squat}" != "no"])
 
 dnl
+dnl use mappedfile version 2
+dnl
+AC_ARG_ENABLE(newmappedfile,
+        [AS_HELP_STRING([--enable-newmappedfile], [enable version2 of mappedfile implementation])],,
+        [enable_newmappedfile=no])
+if test "x$enable_newmappedfile" != xno ; then
+        AC_DEFINE(USE_NEWMAPPEDFILE,[],[Use newmappedfile implementation])
+fi
+
+AM_CONDITIONAL([USE_NEWMAPPEDFILE], [test "${enable_newmappedfile}" != "no"])
+
+dnl
 dnl Search engines - Xapian
 dnl
 
