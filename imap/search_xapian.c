@@ -161,12 +161,8 @@ static void activeitem_free(struct activeitem *item)
 char *activeitem_generate(const char *tier, int generation)
 {
     struct buf buf = BUF_INITIALIZER;
-    char *ret;
     buf_printf(&buf, "%s:%d", tier, generation);
-    ret = buf_release(&buf);
-    buf_free(&buf);
-
-    return ret;
+    return buf_release(&buf);
 }
 
 /* calculate the next name for this tier, by incrementing the generation
