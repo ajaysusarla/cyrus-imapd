@@ -191,6 +191,22 @@ static int reservefile(struct protstream *in, const char *part,
          * to avoid losing protocol sync */
     }
 
+    /* pre-allocate file space */
+    r = posix_fallocate(fileno(file), 0, size);
+    if (r != 0) {
+            if (r == EFBIG)
+                    syslog(LOG_ERR,
+                           "IOERROR: failed to pre-allocate %s, exceeds max file size. ",
+                           message_guid_encode(guid));
+            if (r == ENOSPC)
+                    syslog(LOG_ERR,
+                           "IOERROR: failed to pre-allocate %s, no space left of device.",
+                           message_guid_encode(guid));
+
+            r = IMAP_IOERROR;
+            /* XXX: What do we do?? */
+    }
+
     /* XXX - calculate sha1 on the fly? */
     while (size) {
         size_t n = prot_read(in, buf, size > 8192 ? 8192 : size);
