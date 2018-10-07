@@ -79,12 +79,12 @@ enum cyrusdb_openflags {
 };
 
 typedef int foreach_p(void *rock,
-                      const char *key, size_t keylen,
-                      const char *data, size_t datalen);
+                      const unsigned char *key, size_t keylen,
+                      const unsigned char *data, size_t datalen);
 
 typedef int foreach_cb(void *rock,
-                       const char *key, size_t keylen,
-                       const char *data, size_t datalen);
+                       const unsigned char *key, size_t keylen,
+                       const unsigned char *data, size_t datalen);
 
 typedef int cyrusdb_archiver(const strarray_t *fnames,
                              const char *dirname);
@@ -151,17 +151,17 @@ struct cyrusdb_backend {
        and breaks this rule.
     */
     int (*fetch)(struct dbengine *mydb,
-                 const char *key, size_t keylen,
-                 const char **data, size_t *datalen,
+                 const unsigned char *key, size_t keylen,
+                 const unsigned char **data, size_t *datalen,
                  struct txn **mytid);
     int (*fetchlock)(struct dbengine *mydb,
-                     const char *key, size_t keylen,
-                     const char **data, size_t *datalen,
+                     const unsigned char *key, size_t keylen,
+                     const unsigned char **data, size_t *datalen,
                      struct txn **mytid);
     int (*fetchnext)(struct dbengine *mydb,
-                 const char *key, size_t keylen,
-                 const char **foundkey, size_t *foundkeylen,
-                 const char **data, size_t *datalen,
+                 const unsigned char *key, size_t keylen,
+                 const unsigned char **foundkey, size_t *foundkeylen,
+                 const unsigned char **data, size_t *datalen,
                  struct txn **mytid);
 
     /* foreach: iterate through entries that start with 'prefix'
@@ -183,7 +183,7 @@ struct cyrusdb_backend {
         Calling store, create or delete within a callback may invalidate
         the memory pointed to by the data parameter. */
     int (*foreach)(struct dbengine *mydb,
-                   const char *prefix, size_t prefixlen,
+                   const unsigned char *prefix, size_t prefixlen,
                    foreach_p *p,
                    foreach_cb *cb, void *rock,
                    struct txn **tid);
@@ -193,19 +193,19 @@ struct cyrusdb_backend {
      * Passing data=NULL or datalen=0 places a zero-length record in
      * the database, which can be fetched back again.  */
     int (*create)(struct dbengine *db,
-                  const char *key, size_t keylen,
-                  const char *data, size_t datalen,
+                  const unsigned char *key, size_t keylen,
+                  const unsigned char *data, size_t datalen,
                   struct txn **tid);
     int (*store)(struct dbengine *db,
-                 const char *key, size_t keylen,
-                 const char *data, size_t datalen,
+                 const unsigned char *key, size_t keylen,
+                 const unsigned char *data, size_t datalen,
                  struct txn **tid);
 
     /* Remove entries from the database
      * n.b. trailing underscore so that C++ apps can also use this API
      */
     int (*delete_)(struct dbengine *db,
-                   const char *key, size_t keylen,
+                   const unsigned char *key, size_t keylen,
                    struct txn **tid,
                    int force); /* 1 = ignore not found errors */
 
@@ -219,8 +219,9 @@ struct cyrusdb_backend {
     int (*dump)(struct dbengine *db, int detail);
     int (*consistent)(struct dbengine *db);
     int (*repack)(struct dbengine *db);
-    int (*compar)(struct dbengine *db, const char *s1, int l1,
-                  const char *s2, int l2);
+    int (*compar)(struct dbengine *db,
+                  const unsigned char *s1, size_t l1,
+                  const unsigned char *s2, size_t l2);
 };
 
 extern int cyrusdb_copyfile(const char *srcname, const char *dstname);
@@ -231,7 +232,7 @@ extern int cyrusdb_convert(const char *fromfname, const char *tofname,
 extern int cyrusdb_unlink(const char *backend, const char *fname, int flags);
 
 extern int cyrusdb_dumpfile(struct db *db,
-                            const char *prefix, size_t prefixlen,
+                            const unsigned char *prefix, size_t prefixlen,
                             FILE *f,
                             struct txn **tid);
 extern int cyrusdb_truncate(struct db *db,
@@ -254,38 +255,38 @@ extern int cyrusdb_lockopen(const char *backend, const char *fname,
                            int flags, struct db **ret, struct txn **tid);
 extern int cyrusdb_close(struct db *db);
 extern int cyrusdb_fetch(struct db *db,
-                         const char *key, size_t keylen,
-                         const char **data, size_t *datalen,
+                         const unsigned char *key, size_t keylen,
+                         const unsigned char **data, size_t *datalen,
                          struct txn **mytid);
 extern int cyrusdb_fetchlock(struct db *db,
-                             const char *key, size_t keylen,
-                             const char **data, size_t *datalen,
+                             const unsigned char *key, size_t keylen,
+                             const unsigned char **data, size_t *datalen,
                              struct txn **mytid);
 extern int cyrusdb_fetchnext(struct db *db,
-                             const char *key, size_t keylen,
-                             const char **found, size_t *foundlen,
-                             const char **data, size_t *datalen,
+                             const unsigned char *key, size_t keylen,
+                             const unsigned char **found, size_t *foundlen,
+                             const unsigned char **data, size_t *datalen,
                              struct txn **mytid);
 extern int cyrusdb_foreach(struct db *db,
-                           const char *prefix, size_t prefixlen,
+                           const unsigned char *prefix, size_t prefixlen,
                            foreach_p *p,
                            foreach_cb *cb, void *rock,
                            struct txn **tid);
 extern int cyrusdb_forone(struct db *db,
-                           const char *key, size_t keylen,
+                           const unsigned char *key, size_t keylen,
                            foreach_p *p,
                            foreach_cb *cb, void *rock,
                            struct txn **tid);
 int cyrusdb_create(struct db *db,
-                          const char *key, size_t keylen,
-                          const char *data, size_t datalen,
+                          const unsigned char *key, size_t keylen,
+                          const unsigned char *data, size_t datalen,
                           struct txn **tid);
 extern int cyrusdb_store(struct db *db,
-                         const char *key, size_t keylen,
-                         const char *data, size_t datalen,
+                         const unsigned char *key, size_t keylen,
+                         const unsigned char *data, size_t datalen,
                          struct txn **tid);
 extern int cyrusdb_delete(struct db *db,
-                          const char *key, size_t keylen,
+                          const unsigned char *key, size_t keylen,
                           struct txn **tid, int force);
 extern int cyrusdb_commit(struct db *db, struct txn *tid);
 extern int cyrusdb_abort(struct db *db, struct txn *tid);
@@ -293,8 +294,8 @@ extern int cyrusdb_dump(struct db *db, int detail);
 extern int cyrusdb_consistent(struct db *db);
 extern int cyrusdb_repack(struct db *db);
 extern int cyrusdb_compar(struct db *db,
-                          const char *a, int alen,
-                          const char *b, int blen);
+                          const unsigned char *a, size_t alen,
+                          const unsigned char *b, size_t blen);
 
 /* somewhat special case, because they don't take a DB */
 

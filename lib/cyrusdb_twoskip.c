@@ -1503,7 +1503,7 @@ done:
    if there is a txn, 'cb' must make use of it.
 */
 static int myforeach(struct dbengine *db,
-                     const char *prefix, size_t prefixlen,
+                     const unsigned char *prefix, size_t prefixlen,
                      foreach_p *goodp,
                      foreach_cb *cb, void *rock,
                      struct txn **tidptr)

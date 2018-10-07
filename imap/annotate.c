@@ -980,8 +980,8 @@ struct find_rock {
     int flags;
 };
 
-static int find_p(void *rock, const char *key, size_t keylen,
-                const char *data __attribute__((unused)),
+static int find_p(void *rock, const unsigned char *key, size_t keylen,
+                const unsigned char *data __attribute__((unused)),
                 size_t datalen __attribute__((unused)))
 {
     struct find_rock *frock = (struct find_rock *) rock;
@@ -1005,8 +1005,8 @@ static int find_p(void *rock, const char *key, size_t keylen,
     return 1;
 }
 
-static int find_cb(void *rock, const char *key, size_t keylen,
-                   const char *data, size_t datalen)
+static int find_cb(void *rock, const unsigned char *key, size_t keylen,
+                   const unsigned char *data, size_t datalen)
 {
     struct find_rock *frock = (struct find_rock *) rock;
     const char *mboxname, *entry, *userid;
@@ -3597,8 +3597,8 @@ EXPORTED int annotate_msg_copy(struct mailbox *oldmailbox, uint32_t olduid,
 }
 
 static int cleanup_cb(void *rock,
-                      const char *key, size_t keylen,
-                      const char *data __attribute__((unused)),
+                      const unsigned char *key, size_t keylen,
+                      const unsigned char *data __attribute__((unused)),
                       size_t datalen __attribute__((unused)))
 {
     annotate_db_t *d = (annotate_db_t *)rock;

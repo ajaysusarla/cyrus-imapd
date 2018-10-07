@@ -331,7 +331,7 @@ static int ptload(const char *identifier, struct auth_state **state)
 {
     struct auth_state *fetched = NULL;
     size_t id_len;
-    const char *data = NULL;
+    const unsigned char *data = NULL;
     size_t dsize;
     const char *fname = NULL;
     char *tofree = NULL;
@@ -380,7 +380,7 @@ static int ptload(const char *identifier, struct auth_state **state)
     }
 
     /* fetch the current record for the user */
-    r = cyrusdb_fetch(ptdb, identifier, id_len,
+    r = cyrusdb_fetch(ptdb, (const unsigned char *)identifier, id_len,
                                &data, &dsize, NULL);
     if (r && r != CYRUSDB_NOTFOUND) {
         syslog(LOG_ERR, "auth_newstate: error fetching record: %s",
@@ -486,7 +486,7 @@ static int ptload(const char *identifier, struct auth_state **state)
     }
 
     /* fetch the current record for the user */
-    r = cyrusdb_fetch(ptdb, identifier, id_len,
+    r = cyrusdb_fetch(ptdb, (const unsigned char *)identifier, id_len,
                                &data, &dsize, NULL);
     if (r != 0 || !data) {
         syslog(LOG_ERR, "ptload(): error fetching record: %s"

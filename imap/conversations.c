@@ -1745,9 +1745,9 @@ static void _apply_delta(uint32_t *valp, int delta)
 }
 
 static int _match1(void *rock,
-                   const char *key __attribute__((unused)),
+                   const unsigned char *key __attribute__((unused)),
                    size_t keylen __attribute__((unused)),
-                   const char *data __attribute__((unused)),
+                   const unisgned char *data __attribute__((unused)),
                    size_t datalen __attribute__((unused)))
 {
     int *match = (int *)rock;
@@ -1761,7 +1761,8 @@ EXPORTED int conversations_guid_exists(struct conversations_state *state,
     int match = 0;
 
     char *key = strconcat("G", guidrep, (char *)NULL);
-    cyrusdb_foreach(state->db, key, strlen(key), NULL, _match1, &match, NULL);
+    cyrusdb_foreach(state->db, (unsigned char *)key, strlen(key), NULL,
+                    _match1, &match, NULL);
     free(key);
 
     return match;
@@ -1814,9 +1815,9 @@ static int _guid_one(const char *s, struct guid_foreach_rock *frock, conversatio
 }
 
 static int _guid_cb(void *rock,
-                    const char *key,
+                    const unsigned char *key,
                     size_t keylen,
-                    const char *data,
+                    const unsigned char *data,
                     size_t datalen)
 {
     struct guid_foreach_rock *frock = (struct guid_foreach_rock *)rock;
@@ -2313,8 +2314,8 @@ struct prune_rock {
 };
 
 static int prunecb(void *rock,
-                   const char *key, size_t keylen,
-                   const char *data, size_t datalen)
+                   const unsigned char *key, size_t keylen,
+                   const unsigned char *data, size_t datalen)
 {
     struct prune_rock *prock = (struct prune_rock *)rock;
     arrayu64_t cids = ARRAYU64_INITIALIZER;
@@ -2438,9 +2439,9 @@ EXPORTED int conversations_rename_folder(struct conversations_state *state,
 
 
 static int zero_b_cb(void *rock,
-                     const char *key,
+                     const unsigned char *key,
                      size_t keylen,
-                     const char *val,
+                     const unsigned char *val,
                      size_t vallen)
 {
     struct conversations_state *state = (struct conversations_state *)rock;
@@ -2486,9 +2487,9 @@ done:
 }
 
 static int zero_f_cb(void *rock,
-                     const char *key,
+                     const unsigned char *key,
                      size_t keylen,
-                     const char *val,
+                     const unsigned char *val,
                      size_t vallen)
 {
     struct conversations_state *state = (struct conversations_state *)rock;
@@ -2509,9 +2510,9 @@ static int zero_f_cb(void *rock,
 }
 
 static int zero_g_cb(void *rock,
-                     const char *key,
+                     const unsigned char *key,
                      size_t keylen,
-                     const char *val __attribute__((unused)),
+                     const unsigned char *val __attribute__((unused)),
                      size_t vallen __attribute__((unused)))
 {
     struct conversations_state *state = (struct conversations_state *)rock;
@@ -2546,9 +2547,9 @@ EXPORTED int conversations_zero_counts(struct conversations_state *state)
 }
 
 static int cleanup_b_cb(void *rock,
-                        const char *key,
+                        const unsigned char *key,
                         size_t keylen,
-                        const char *val,
+                        const unsigned char *val,
                         size_t vallen)
 {
     struct conversations_state *state = (struct conversations_state *)rock;

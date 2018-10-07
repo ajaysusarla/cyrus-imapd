@@ -357,7 +357,7 @@ static int myclose(struct dbengine *db)
 }
 
 static int myfetch(struct dbengine *db, char *quota_path,
-                   const char **data, size_t *datalen,
+                   const unsigned char **data, size_t *datalen,
                    struct txn **tid)
 {
     struct subtxn *mytid = NULL;
@@ -428,14 +428,16 @@ static int myfetch(struct dbengine *db, char *quota_path,
                 MAP_UNKNOWN_LEN, quota_path, 0);
 
     if (!quota_len) {
-        *data = db->data = xstrdup("");
+        db->data = xstrdup("");
+        *data = (unsigned char *)db->data;
         *datalen = 0;
     }
     else if (quota_base[quota_len-1] != '\n') {
         r = CYRUSDB_IOERROR;
     }
     else {
-        *data = db->data = xstrndup(quota_base, quota_len);
+        db->data = xstrndup(quota_base, quota_len);
+        *data = (unsigned char *)db->data;
         *datalen = quota_len - 1;
         db->data[*datalen] = '\0';
     }
@@ -456,8 +458,8 @@ static int myfetch(struct dbengine *db, char *quota_path,
 }
 
 static int fetch(struct dbengine *db,
-                 const char *key, size_t keylen,
-                 const char **data, size_t *datalen,
+                 const unsigned char *key, size_t keylen,
+                 const unsigned char **data, size_t *datalen,
                  struct txn **tid)
 {
     char quota_path[MAX_QUOTA_PATH+1], *tmpkey = NULL;
@@ -467,10 +469,10 @@ static int fetch(struct dbengine *db,
         tmpkey = xmalloc(keylen + 1);
         memcpy(tmpkey, key, keylen);
         tmpkey[keylen] = '\0';
-        key = tmpkey;
+        key = (unsigned char *)tmpkey;
     }
 
-    hash_quota(quota_path, sizeof(quota_path), key, db->path);
+    hash_quota(quota_path, sizeof(quota_path), (const char *)key, db->path);
     if (tmpkey) free(tmpkey);
 
     return myfetch(db, quota_path, data, datalen, tid);
@@ -515,8 +517,8 @@ static int compar_qr_mbox(const void *v1, const void *v2)
     return bsearch_compare_mbox(qr1, qr2);
 }
 
-static void scan_qr_dir(char *quota_path, const char *prefix,
-                        strarray_t *pathbuf)
+static void scan_qr_dir(char *quota_path, const unsigned char *prefix,
+                        size_t prefixlen, strarray_t *pathbuf)
 {
     int config_fulldirhash = libcyrus_config_getswitch(CYRUSOPT_FULLDIRHASH);
     int config_virtdomains = libcyrus_config_getswitch(CYRUSOPT_VIRTDOMAINS);
@@ -532,7 +534,7 @@ static void scan_qr_dir(char *quota_path, const char *prefix,
 
     /* check for path restriction - if there's a prefix we only
      * need to scan a single directory */
-    onlyc = name_to_hashchar(prefix, 1);
+    onlyc = name_to_hashchar((const char *)prefix, 1);
 
     c = config_fulldirhash ? 'A' : 'a';
     for (i = 0; i < 26; i++, c++) {
@@ -546,7 +548,7 @@ static void scan_qr_dir(char *quota_path, const char *prefix,
                 if (!strcmp(next->d_name, ".")
                     || !strcmp(next->d_name, "..")) continue;
 
-                if (!strncmp(next->d_name, prefix, strlen(prefix)))
+                if (!memcmp(next->d_name, prefix, prefixlen))
                     strarray_appendm(pathbuf,
                                      strconcat(quota_path, next->d_name, (char *)NULL));
             }
@@ -555,7 +557,7 @@ static void scan_qr_dir(char *quota_path, const char *prefix,
         }
     }
 
-    if (config_virtdomains && !strlen(prefix) &&
+    if (config_virtdomains && !prefixlen &&
         strstr(quota_path, FNAME_DOMAINDIR)) {
         /* search for a domain quota */
         struct stat buf;
@@ -568,7 +570,7 @@ static void scan_qr_dir(char *quota_path, const char *prefix,
 }
 
 static int foreach(struct dbengine *db,
-                   const char *prefix, size_t prefixlen,
+                   const unsigned char *prefix, size_t prefixlen,
                    foreach_p *goodp,
                    foreach_cb *cb, void *rock,
                    struct txn **tid)
@@ -579,7 +581,7 @@ static int foreach(struct dbengine *db,
     char quota_path[MAX_QUOTA_PATH+1];
     strarray_t pathbuf = STRARRAY_INITIALIZER;
     int i;
-    char *tmpprefix = NULL, *p = NULL;
+    unsigned char *tmpprefix = NULL, *p = NULL;
 
     /* if we need to truncate the prefix, do so */
     if (prefix[prefixlen] != '\0') {
@@ -589,12 +591,12 @@ static int foreach(struct dbengine *db,
         prefix = tmpprefix;
     }
 
-    hash_quota(quota_path, sizeof(quota_path), prefix, db->path);
-    if (config_virtdomains && (p = strchr(prefix, '!')))
+    hash_quota(quota_path, sizeof(quota_path), (const char *)prefix, db->path);
+    if (config_virtdomains && (p = memchr(prefix, '!', prefixlen)))
         prefix = p + 1;
 
     /* search for the quotaroots */
-    scan_qr_dir(quota_path, prefix, &pathbuf);
+    scan_qr_dir(quota_path, prefix, prefixlen, &pathbuf);
 
     if (config_virtdomains && !prefixlen) {
         /* search for all virtdomain quotaroots */
@@ -623,7 +625,7 @@ static int foreach(struct dbengine *db,
 
                     snprintf(endp+2, sizeof(quota_path) - (n+2),
                              "%s%s", next->d_name, FNAME_QUOTADIR);
-                    scan_qr_dir(quota_path, "", &pathbuf);
+                    scan_qr_dir(quota_path, (unsigned char *)"", 0, &pathbuf);
                 }
 
                 closedir(qrdir);
@@ -643,15 +645,18 @@ static int foreach(struct dbengine *db,
         const char *data, *key;
         size_t keylen, datalen;
 
-        r = myfetch(db, pathbuf.data[i], &data, &datalen, tid);
+        r = myfetch(db, pathbuf.data[i], (const unsigned char **)&data,
+                    &datalen, tid);
         if (r) break;
 
         key = path_to_qr(pathbuf.data[i], quota_path);
         keylen = strlen(key);
 
-        if (!goodp || goodp(rock, key, keylen, data, datalen)) {
+        if (!goodp || goodp(rock, (const unsigned char *)key, keylen,
+                            (const unsigned char *)data, datalen)) {
             /* make callback */
-            r = cb(rock, key, keylen, data, datalen);
+            r = cb(rock, (const unsigned char *)key, keylen,
+                   (const unsigned char *)data, datalen);
             if (r) break;
         }
     }
@@ -662,8 +667,8 @@ static int foreach(struct dbengine *db,
 }
 
 static int mystore(struct dbengine *db,
-                   const char *key, size_t keylen,
-                   const char *data, size_t datalen,
+                   const unsigned char *key, size_t keylen,
+                   const unsigned char *data, size_t datalen,
                    struct txn **tid, int overwrite)
 {
     char quota_path[MAX_QUOTA_PATH+1], *tmpkey = NULL;
@@ -675,7 +680,7 @@ static int mystore(struct dbengine *db,
     memcpy(tmpkey, key, keylen);
     tmpkey[keylen] = '\0';
 
-    hash_quota(quota_path, sizeof(quota_path), tmpkey, db->path);
+    hash_quota(quota_path, sizeof(quota_path), (const char *)tmpkey, db->path);
     if (tmpkey) free(tmpkey);
 
     if (tid) {
@@ -809,23 +814,23 @@ static int mystore(struct dbengine *db,
 }
 
 static int create(struct dbengine *db,
-                  const char *key, size_t keylen,
-                  const char *data, size_t datalen,
+                  const unsigned char *key, size_t keylen,
+                  const unsigned char *data, size_t datalen,
                   struct txn **tid)
 {
     return mystore(db, key, keylen, data, datalen, tid, 0);
 }
 
 static int store(struct dbengine *db,
-                 const char *key, size_t keylen,
-                 const char *data, size_t datalen,
+                 const unsigned char *key, size_t keylen,
+                 const unsigned char *data, size_t datalen,
                  struct txn **tid)
 {
     return mystore(db, key, keylen, data, datalen, tid, 1);
 }
 
 static int delete(struct dbengine *db,
-                  const char *key, size_t keylen,
+                  const unsigned char *key, size_t keylen,
                   struct txn **mytid, int force __attribute__((unused)))
 {
     return mystore(db, key, keylen, NULL, 0, mytid, 1);
@@ -863,13 +868,13 @@ static int abort_txn(struct dbengine *db __attribute__((unused)), struct txn *ti
 }
 
 /* quotalegacy gets compar set at startup, but it's not the same */
-static int mycompar(struct dbengine *db, const char *a, int alen,
-                    const char*b, int blen)
+static int mycompar(struct dbengine *db, const unsigned char *a, size_t alen,
+                    const unsigned char *b, size_t blen)
 {
     if (db->compar == compar_qr_mbox)
-        return bsearch_ncompare_mbox(a, alen, b, blen);
+        return bsearch_uncompare_mbox(a, alen, b, blen);
     else
-        return bsearch_ncompare_raw(a, alen, b, blen);
+        return bsearch_uncompare_raw(a, alen, b, blen);
 }
 
 

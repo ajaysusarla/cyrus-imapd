@@ -99,7 +99,7 @@ static struct dbengine *alldbs;
  */
 #define ESCAPE      0xff
 
-static void encode(const char *ps, int len, struct buf *buf)
+static void encode(const unsigned char *ps, int len, struct buf *buf)
 {
     const unsigned char *p = (const unsigned char *)ps;
 
@@ -386,8 +386,8 @@ static int myclose(struct dbengine *db)
 }
 
 static int myfetch(struct dbengine *db,
-                   const char *key, size_t keylen,
-                   const char **data, size_t *datalen,
+                   const unsigned char *key, size_t keylen,
+                   const unsigned char **data, size_t *datalen,
                    struct txn **mytid)
 {
     int r = 0;
@@ -413,7 +413,7 @@ static int myfetch(struct dbengine *db,
                    /* subtract one for \t, and one for the \n */
                    len - keybuf.len - 2,
                    &db->data);
-            if (data) *data = DATA(db);
+            if (data) *data = (unsigned char *)DATA(db);
             if (datalen) *datalen = DATALEN(db);
         }
     } else {
@@ -425,16 +425,16 @@ static int myfetch(struct dbengine *db,
 }
 
 static int fetch(struct dbengine *mydb,
-                 const char *key, size_t keylen,
-                 const char **data, size_t *datalen,
+                 const unsigned char *key, size_t keylen,
+                 const unsigned char **data, size_t *datalen,
                  struct txn **mytid)
 {
     return myfetch(mydb, key, keylen, data, datalen, mytid);
 }
 
 static int fetchlock(struct dbengine *db,
-                     const char *key, size_t keylen,
-                     const char **data, size_t *datalen,
+                     const unsigned char *key, size_t keylen,
+                     const unsigned char **data, size_t *datalen,
                      struct txn **mytid)
 {
     return myfetch(db, key, keylen, data, datalen, mytid);
@@ -476,7 +476,7 @@ static int getentry(struct dbengine *db, const char *p,
     if (r) break;
 
 static int foreach(struct dbengine *db,
-                   const char *prefix, size_t prefixlen,
+                   const unsigned char *prefix, size_t prefixlen,
                    foreach_p *goodp,
                    foreach_cb *cb, void *rock,
                    struct txn **mytid)
@@ -546,7 +546,8 @@ static int foreach(struct dbengine *db,
         if (keybuf.len < (size_t) prefixbuf.len) break;
         if (prefixbuf.len && memcmp(keybuf.s, prefixbuf.s, prefixbuf.len)) break;
 
-        if (!goodp || goodp(rock, keybuf.s, keybuf.len, DATA(db), DATALEN(db))) {
+        if (!goodp || goodp(rock, (unsigned char *)keybuf.s, keybuf.len,
+                            (unsigned char *)DATA(db), DATALEN(db))) {
             unsigned long ino = db->ino;
             unsigned long sz = db->size;
 
@@ -556,7 +557,8 @@ static int foreach(struct dbengine *db,
             }
 
             /* make callback */
-            r = cb(rock, keybuf.s, keybuf.len, DATA(db), DATALEN(db));
+            r = cb(rock, (unsigned char *)keybuf.s, keybuf.len,
+                   (unsigned char *)DATA(db), DATALEN(db));
             if (r) break;
 
             if (mytid) {
@@ -603,8 +605,8 @@ static int foreach(struct dbengine *db,
 #undef GETENTRY
 
 static int mystore(struct dbengine *db,
-                   const char *key, size_t keylen,
-                   const char *data, size_t datalen,
+                   const unsigned char *key, size_t keylen,
+                   const unsigned char *data, size_t datalen,
                    struct txn **mytid, int overwrite)
 {
     int r = 0;
@@ -751,31 +753,31 @@ static int mystore(struct dbengine *db,
 }
 
 static int create(struct dbengine *db,
-                  const char *key, size_t keylen,
-                  const char *data, size_t datalen,
+                  const unsigned char *key, size_t keylen,
+                  const unsigned char *data, size_t datalen,
                   struct txn **tid)
 {
     if (!data) {
-        data = "";
+        data = (const unsigned char *)"";
         datalen = 0;
     }
     return mystore(db, key, keylen, data, datalen, tid, 0);
 }
 
 static int store(struct dbengine *db,
-                 const char *key, size_t keylen,
-                 const char *data, size_t datalen,
+                 const unsigned char *key, size_t keylen,
+                 const unsigned char *data, size_t datalen,
                  struct txn **tid)
 {
     if (!data) {
-        data = "";
+        data = (const unsigned char *)"";
         datalen = 0;
     }
     return mystore(db, key, keylen, data, datalen, tid, 1);
 }
 
 static int delete(struct dbengine *db,
-                  const char *key, size_t keylen,
+                  const unsigned char *key, size_t keylen,
                   struct txn **mytid, int force __attribute__((unused)))
 {
     return mystore(db, key, keylen, NULL, 0, mytid, 1);
@@ -823,10 +825,10 @@ static int commit_txn(struct dbengine *db, struct txn *tid)
 
 /* flat database is always mbox sort order */
 static int mycompar(struct dbengine *db __attribute__((unused)),
-                    const char *a, int alen,
-                    const char *b, int blen)
+                    const unsigned char *a, size_t alen,
+                    const unsigned char *b, size_t blen)
 {
-    return bsearch_ncompare_mbox(a, alen, b, blen);
+    return bsearch_uncompare_mbox(a, alen, b, blen);
 }
 
 EXPORTED struct cyrusdb_backend cyrusdb_flat =

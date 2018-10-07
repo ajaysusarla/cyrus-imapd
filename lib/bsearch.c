@@ -307,3 +307,19 @@ HIDDEN int bsearch_ncompare_raw(const char *s1, int l1, const char *s2, int l2)
     return r;
 }
 
+HIDDEN int bsearch_uncompare_raw(const unsigned char *s1, size_t l1,
+                                 const unsigned char *s2, size_t l2)
+{
+    size_t min = l1 < l2 ? l1 : l2;
+    size_t r = memcmp(s1, s2, min);
+
+    if (!r) {
+        if (l1 > l2)
+            r = 1;
+        else if (l2 > l1)
+            r = -1;
+    }
+
+    return r;
+}
+

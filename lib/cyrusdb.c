@@ -197,8 +197,8 @@ EXPORTED int cyrusdb_close(struct db *db)
 }
 
 EXPORTED int cyrusdb_fetch(struct db *db,
-             const char *key, size_t keylen,
-             const char **data, size_t *datalen,
+             const unsigned char *key, size_t keylen,
+             const unsigned char **data, size_t *datalen,
              struct txn **mytid)
 {
     if (!db->backend->fetch)
@@ -208,8 +208,8 @@ EXPORTED int cyrusdb_fetch(struct db *db,
 }
 
 EXPORTED int cyrusdb_fetchlock(struct db *db,
-                 const char *key, size_t keylen,
-                 const char **data, size_t *datalen,
+                 const unsigned char *key, size_t keylen,
+                 const unsigned char **data, size_t *datalen,
                  struct txn **mytid)
 {
     if (!db->backend->fetchlock)
@@ -219,9 +219,9 @@ EXPORTED int cyrusdb_fetchlock(struct db *db,
 }
 
 EXPORTED int cyrusdb_fetchnext(struct db *db,
-                 const char *key, size_t keylen,
-                 const char **found, size_t *foundlen,
-                 const char **data, size_t *datalen,
+                 const unsigned char *key, size_t keylen,
+                 const unsigned char **found, size_t *foundlen,
+                 const unsigned char **data, size_t *datalen,
                  struct txn **mytid)
 {
     if (!db->backend->fetchnext)
@@ -232,7 +232,7 @@ EXPORTED int cyrusdb_fetchnext(struct db *db,
 }
 
 EXPORTED int cyrusdb_foreach(struct db *db,
-               const char *prefix, size_t prefixlen,
+               const unsigned char *prefix, size_t prefixlen,
                foreach_p *p,
                foreach_cb *cb, void *rock,
                struct txn **tid)
@@ -244,12 +244,12 @@ EXPORTED int cyrusdb_foreach(struct db *db,
 }
 
 EXPORTED int cyrusdb_forone(struct db *db,
-               const char *key, size_t keylen,
+               const unsigned char *key, size_t keylen,
                foreach_p *p,
                foreach_cb *cb, void *rock,
                struct txn **tid)
 {
-    const char *data;
+    const unsigned char *data;
     size_t datalen;
     int r = cyrusdb_fetch(db, key, keylen, &data, &datalen, tid);
     if (r == CYRUSDB_NOTFOUND) return 0;
@@ -261,8 +261,8 @@ EXPORTED int cyrusdb_forone(struct db *db,
 }
 
 EXPORTED int cyrusdb_create(struct db *db,
-              const char *key, size_t keylen,
-              const char *data, size_t datalen,
+              const unsigned char *key, size_t keylen,
+              const unsigned char *data, size_t datalen,
               struct txn **tid)
 {
     if (!db->backend->create)
@@ -271,8 +271,8 @@ EXPORTED int cyrusdb_create(struct db *db,
 }
 
 EXPORTED int cyrusdb_store(struct db *db,
-             const char *key, size_t keylen,
-             const char *data, size_t datalen,
+             const unsigned char *key, size_t keylen,
+             const unsigned char *data, size_t datalen,
              struct txn **tid)
 {
     if (!db->backend->store)
@@ -281,7 +281,7 @@ EXPORTED int cyrusdb_store(struct db *db,
 }
 
 EXPORTED int cyrusdb_delete(struct db *db,
-              const char *key, size_t keylen,
+              const unsigned char *key, size_t keylen,
               struct txn **tid, int force)
 {
     if (!db->backend->delete_)
@@ -322,11 +322,11 @@ EXPORTED int cyrusdb_repack(struct db *db)
 }
 
 EXPORTED int cyrusdb_compar(struct db *db,
-                   const char *a, int alen,
-                   const char *b, int blen)
+                   const unsigned char *a, size_t alen,
+                   const unsigned char *b, size_t blen)
 {
     if (!db->backend->compar)
-        return bsearch_ncompare_raw(a, alen, b, blen);
+        return bsearch_uncompare_raw(a, alen, b, blen);
     return db->backend->compar(db->engine, a, alen, b, blen);
 }
 
@@ -371,8 +371,8 @@ struct db_rock {
 };
 
 static int delete_cb(void *rock,
-                     const char *key, size_t keylen,
-                     const char *data __attribute__((unused)),
+                     const unsigned char *key, size_t keylen,
+                     const unsigned char *data __attribute__((unused)),
                      size_t datalen __attribute__((unused)))
 {
     struct db_rock *cr = (struct db_rock *)rock;
@@ -380,8 +380,8 @@ static int delete_cb(void *rock,
 }
 
 static int print_cb(void *rock,
-                    const char *key, size_t keylen,
-                    const char *data, size_t datalen)
+                    const unsigned char *key, size_t keylen,
+                    const unsigned char *data, size_t datalen)
 {
     FILE *f = (FILE *)rock;
 
@@ -393,7 +393,7 @@ static int print_cb(void *rock,
 
 
 EXPORTED int cyrusdb_dumpfile(struct db *db,
-                              const char *prefix, size_t prefixlen,
+                              const unsigned char *prefix, size_t prefixlen,
                               FILE *f,
                               struct txn **tid)
 {
@@ -408,7 +408,8 @@ EXPORTED int cyrusdb_truncate(struct db *db,
     tr.db = db;
     tr.tid = tid;
 
-    return cyrusdb_foreach(db, "", 0, NULL, delete_cb, &tr, tid);
+    return cyrusdb_foreach(db, (unsigned char *)"", 0,
+                           NULL, delete_cb, &tr, tid);
 }
 
 EXPORTED int cyrusdb_undumpfile(struct db *db,
@@ -431,7 +432,7 @@ EXPORTED int cyrusdb_undumpfile(struct db *db,
 
         /* deletion (no value) */
         if (!tab) {
-            r = cyrusdb_delete(db, str, line.len, tid, 1);
+            r = cyrusdb_delete(db, (unsigned char *)str, line.len, tid, 1);
             if (r) goto out;
         }
 
@@ -439,7 +440,8 @@ EXPORTED int cyrusdb_undumpfile(struct db *db,
         else {
             unsigned klen = (tab - str);
             unsigned vlen = line.len - klen - 1; /* TAB */
-            r = cyrusdb_store(db, str, klen, tab + 1, vlen, tid);
+            r = cyrusdb_store(db, (unsigned char *)str, klen,
+                              (unsigned char *)tab + 1, vlen, tid);
             if (r) goto out;
         }
     }
@@ -450,8 +452,8 @@ EXPORTED int cyrusdb_undumpfile(struct db *db,
 }
 
 static int converter_cb(void *rock,
-                        const char *key, size_t keylen,
-                        const char *data, size_t datalen)
+                        const unsigned char *key, size_t keylen,
+                        const unsigned char *data, size_t datalen)
 {
     struct db_rock *cr = (struct db_rock *)rock;
     return cyrusdb_store(cr->db, key, keylen, data, datalen, cr->tid);
@@ -476,7 +478,8 @@ EXPORTED int cyrusdb_convert(const char *fromfname, const char *tofname,
     if (r) goto err;
 
     /* use a bogus fetch to lock source DB before touching the destination */
-    r = cyrusdb_fetch(fromdb, "_", 1, NULL, NULL, &fromtid);
+    r = cyrusdb_fetch(fromdb, (const unsigned char *)"_", 1,
+                      NULL, NULL, &fromtid);
     if (r == CYRUSDB_NOTFOUND) r = 0;
     if (r) goto err;
 
@@ -495,7 +498,8 @@ EXPORTED int cyrusdb_convert(const char *fromfname, const char *tofname,
     cr.tid = &totid;
 
     /* copy each record to the destination DB */
-    cyrusdb_foreach(fromdb, "", 0, NULL, converter_cb, &cr, &fromtid);
+    cyrusdb_foreach(fromdb, (const unsigned char *)"", 0, NULL,
+                    converter_cb, &cr, &fromtid);
 
     /* commit destination transaction */
     if (totid) cyrusdb_commit(todb, totid);

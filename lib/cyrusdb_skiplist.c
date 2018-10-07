@@ -1007,7 +1007,7 @@ static int myclose(struct dbengine *db)
    if it doesn't exist.
    if previous is set, finds the last node < key */
 static const char *find_node(struct dbengine *db,
-                             const char *key, size_t keylen,
+                             const unsigned char *key, size_t keylen,
                              unsigned *updateoffsets)
 {
     const char *ptr = db->map_base + DUMMY_OFFSET(db);
@@ -1109,7 +1109,7 @@ static int fetchlock(struct dbengine *db,
    if there is a txn, 'cb' must make use of it.
 */
 static int myforeach(struct dbengine *db,
-                     const char *prefix, size_t prefixlen,
+                     const unsigned char *prefix, size_t prefixlen,
                      foreach_p *goodp,
                      foreach_cb *cb, void *rock,
                      struct txn **tidptr)
@@ -1240,8 +1240,8 @@ static unsigned int randlvl(struct dbengine *db)
 }
 
 static int mystore(struct dbengine *db,
-                   const char *key, size_t keylen,
-                   const char *data, size_t datalen,
+                   const unsigned char *key, size_t keylen,
+                   const unsigned char *data, size_t datalen,
                    struct txn **tidptr, int overwrite)
 {
     const char *ptr;
@@ -1395,23 +1395,23 @@ static int mystore(struct dbengine *db,
 }
 
 static int create(struct dbengine *db,
-                  const char *key, size_t keylen,
-                  const char *data, size_t datalen,
+                  const unsigned char *key, size_t keylen,
+                  const unsigned char *data, size_t datalen,
                   struct txn **tid)
 {
     return mystore(db, key, keylen, data, datalen, tid, 0);
 }
 
 static int store(struct dbengine *db,
-                 const char *key, size_t keylen,
-                 const char *data, size_t datalen,
+                 const unsigned char *key, size_t keylen,
+                 const unsigned char *data, size_t datalen,
                  struct txn **tid)
 {
     return mystore(db, key, keylen, data, datalen, tid, 1);
 }
 
 static int mydelete(struct dbengine *db,
-                    const char *key, size_t keylen,
+                    const unsigned char *key, size_t keylen,
                     struct txn **tidptr, int force __attribute__((unused)))
 {
     const char *ptr;
@@ -2439,8 +2439,8 @@ static int recovery(struct dbengine *db, int flags)
 }
 
 /* skiplist compar function is set at open */
-static int mycompar(struct dbengine *db, const char *a, int alen,
-                    const char *b, int blen)
+static int mycompar(struct dbengine *db, const unsigned char *a, size_t alen,
+                    const unsigned char *b, size_t blen)
 {
     return db->compar(a, alen, b, blen);
 }

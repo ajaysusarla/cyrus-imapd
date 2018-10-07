@@ -243,8 +243,8 @@ struct findrock {
     void *rock;
 };
 
-static int find_cb(void *rock, const char *key, size_t keylen,
-                   const char *data, size_t datalen)
+static int find_cb(void *rock, const unsigned char *key, size_t keylen,
+                   const unsigned char *data, size_t datalen)
 {
     struct findrock *frock = (struct findrock *) rock;
     duplicate_key_t dkey = DUPLICATE_INITIALIZER;
@@ -294,8 +294,9 @@ struct prunerock {
 };
 
 static int prune_p(void *rock,
-                   const char *key, size_t keylen,
-                   const char *data, size_t datalen __attribute__((unused)))
+                   const unsigned char *key, size_t keylen,
+                   const unsigned char *data,
+                   size_t datalen __attribute__((unused)))
 {
     struct prunerock *prock = (struct prunerock *) rock;
     time_t mark, *expmark = NULL;
@@ -364,8 +365,8 @@ struct dumprock {
 };
 
 static int dump_cb(void *rock,
-                   const char *key, size_t keylen,
-                   const char *data, size_t datalen)
+                   const unsigned char *key, size_t keylen,
+                   const unsigned char *data, size_t datalen)
 {
     struct dumprock *drock = (struct dumprock *) rock;
     time_t mark;

@@ -690,7 +690,7 @@ static int fetch(struct dbengine *db,
 }
 
 static int foreach(struct dbengine *db,
-                   const char *prefix, size_t prefixlen,
+                   const unsigned char *prefix, size_t prefixlen,
                    foreach_p *goodp,
                    foreach_cb *cb, void *rock,
                    struct txn **tid)
