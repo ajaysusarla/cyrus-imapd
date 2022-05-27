@@ -1481,7 +1481,7 @@ sub _stop_pid
         eval {
             timed_wait(sub {
                 eval { $reaper->() if (defined $reaper) };
-                return (kill(0, $pid) == 0);
+                return (waitpid($pid, WNOHANG) > 0);
             });
         };
         last unless $@;
