@@ -1481,15 +1481,10 @@ sub _stop_pid
         eval {
             timed_wait(sub {
                 eval { $reaper->() if (defined $reaper) };
-                return (waitpid($pid, WNOHANG) > 0);
+                return (kill(0, $pid) == 0);
             });
         };
         last unless $@;
-        my $path_to_file = "/proc/$pid/status";
-        open my $handle, '<', $path_to_file;
-        chomp(my @lines = <$handle>);
-        close $handle;
-        xlog ">> STATUS FILE CONTENTS: " . Dumper(@lines);
         # Timed out -- No More Mr Nice Guy
         xlog "_stop_pid: failed to shut down pid $pid with signal $signame{$sig}";
         $r = 0;
